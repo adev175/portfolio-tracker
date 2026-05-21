@@ -397,7 +397,7 @@
     <div class="asset-icon" style="background:#e8f5e9;color:#1b5e20">N</div>
     <div class="asset-meta">
       <div class="asset-name">NVIDIA<span class="badge badge-s">STOCK</span></div>
-      <div class="asset-sub">NVDA · Finnhub (free)</div>
+      <div class="asset-sub">NVDA · Finnhub (JPY)</div>
     </div>
     <div class="asset-price-col">
       <div class="asset-price" id="nvda-price">—</div>
@@ -409,8 +409,8 @@
       <span class="row-label">Số cổ phiếu</span>
       <input class="hold-input" id="hold-nvda" type="number" value="1" step="1" min="0" oninput="save();recalc()">
     </div>
-    <div class="asset-row"><span class="row-label">Giá trị</span><span class="row-val" id="nvda-val">—</span></div>
-    <div class="asset-row"><span class="row-label">P&L hôm nay</span><span class="row-val" id="nvda-pl">—</span></div>
+    <div class="asset-row"><span class="row-label">Giá trị (¥)</span><span class="row-val" id="nvda-val">—</span></div>
+    <div class="asset-row"><span class="row-label">P&L hôm nay (¥)</span><span class="row-val" id="nvda-pl">—</span></div>
   </div>
 </div>
 
@@ -466,19 +466,31 @@ function load() {
 
 // ── Format ──────────────────────────────────────────
 const fmtUSD  = n => n == null ? '—' : '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+const fmtJPY  = n => n == null ? '—' : '¥' + n.toLocaleString('ja-JP', {maximumFractionDigits:0})
 const fmtPct  = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 const clsCh   = n => n > 0 ? 'pos' : n < 0 ? 'neg' : 'neu'
 
 // ── State ───────────────────────────────────────────
 let prices  = { btc: null, eth: null, nvda: null }
 let changes = { btc: 0,    eth: 0,    nvda: 0    }
+let fx      = { usdJpy: null }
+
+const toJPY = n => (n == null || !fx.usdJpy) ? null : n * fx.usdJpy
 
 // ── Fetch prices ────────────────────────────────────
+async function fetchFX() {
+  try {
+    const r = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=JPY')
+    const d = await r.json()
+    fx.usdJpy = d && d.rates ? d.rates.JPY : null
+  } catch(e) { console.error('FX:', e) }
+}
 async function fetchAll() {
   const btn = document.getElementById('refreshBtn')
   btn.innerHTML = '<span class="spin">↻</span>'
   btn.disabled = true
 
+  await fetchFX()
   await Promise.allSettled([fetchCrypto(), fetchNVDA()])
 
   recalc()
@@ -511,7 +523,7 @@ async function fetchNVDA() {
   const key = get('finnhub-key')
   if (!key) {
     prices.nvda = 135; changes.nvda = 0
-    document.getElementById('nvda-price').textContent = '$135 (ước tính)'
+    document.getElementById('nvda-price').textContent = fmtJPY(toJPY(prices.nvda)) + ' (ước tính)'
     document.getElementById('nvda-chg').textContent = 'Cần Finnhub key'
     document.getElementById('nvda-chg').className = 'asset-chg neu'
     return
@@ -521,7 +533,7 @@ async function fetchNVDA() {
     const d = await r.json()
     prices.nvda  = d.c
     changes.nvda = d.pc > 0 ? ((d.c - d.pc) / d.pc * 100) : 0
-    document.getElementById('nvda-price').textContent = fmtUSD(prices.nvda)
+    document.getElementById('nvda-price').textContent = fmtJPY(toJPY(prices.nvda))
     setChg('nvda-chg', changes.nvda)
   } catch(e) { console.error('Finnhub:', e) }
 }
@@ -574,9 +586,10 @@ function recalc() {
   ;['btc','eth','nvda'].forEach(k => {
     const pct = total > 0 ? (v[k] / total * 100) : 0
     const pl  = v[k] * changes[k] / 100
-    document.getElementById(k + '-val').textContent = fmtUSD(v[k])
+    const isStock = k === 'nvda'
+    document.getElementById(k + '-val').textContent = isStock ? fmtJPY(toJPY(v[k])) : fmtUSD(v[k])
     const plE = document.getElementById(k + '-pl')
-    plE.textContent = (pl >= 0 ? '+' : '') + fmtUSD(Math.abs(pl))
+    plE.textContent = (pl >= 0 ? '+' : '') + (isStock ? fmtJPY(toJPY(Math.abs(pl))) : fmtUSD(Math.abs(pl)))
     plE.className   = 'row-val ' + clsCh(pl)
     document.getElementById('pct-' + k).textContent = pct.toFixed(1) + '%'
     document.getElementById('seg-' + k).style.width = pct + '%'
