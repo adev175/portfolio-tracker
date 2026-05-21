@@ -476,13 +476,17 @@ let changes = { btc: 0,    eth: 0,    nvda: 0    }
 let fx      = { usdJpy: null }
 
 const toJpy = n => (n == null || !fx.usdJpy) ? null : n * fx.usdJpy
+const fmtStock = n => fx.usdJpy ? fmtJPY(toJpy(n)) : fmtUSD(n)
 
 // ── Fetch prices ────────────────────────────────────
 async function fetchFX() {
   try {
     const r = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=JPY')
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
     const d = await r.json()
-    fx.usdJpy = d && d.rates ? d.rates.JPY : null
+    const rate = d && d.rates ? d.rates.JPY : null
+    if (typeof rate !== 'number') throw new Error('JPY rate missing')
+    fx.usdJpy = rate
   } catch(e) { console.error('Failed to fetch USD→JPY exchange rate:', e) }
 }
 async function fetchAll() {
@@ -523,7 +527,7 @@ async function fetchNVDA() {
   const key = get('finnhub-key')
   if (!key) {
     prices.nvda = 135; changes.nvda = 0
-    document.getElementById('nvda-price').textContent = fmtJPY(toJpy(prices.nvda)) + ' (ước tính)'
+    document.getElementById('nvda-price').textContent = fmtStock(prices.nvda) + ' (ước tính)'
     document.getElementById('nvda-chg').textContent = 'Cần Finnhub key'
     document.getElementById('nvda-chg').className = 'asset-chg neu'
     return
@@ -533,7 +537,7 @@ async function fetchNVDA() {
     const d = await r.json()
     prices.nvda  = d.c
     changes.nvda = d.pc > 0 ? ((d.c - d.pc) / d.pc * 100) : 0
-    document.getElementById('nvda-price').textContent = fmtJPY(toJpy(prices.nvda))
+    document.getElementById('nvda-price').textContent = fmtStock(prices.nvda)
     setChg('nvda-chg', changes.nvda)
   } catch(e) { console.error('Finnhub:', e) }
 }
@@ -587,9 +591,10 @@ function recalc() {
     const pct = total > 0 ? (v[k] / total * 100) : 0
     const pl  = v[k] * changes[k] / 100
     const isStock = k === 'nvda'
-    document.getElementById(k + '-val').textContent = isStock ? fmtJPY(toJpy(v[k])) : fmtUSD(v[k])
+    const fmtMoney = isStock ? fmtStock : fmtUSD
+    document.getElementById(k + '-val').textContent = fmtMoney(v[k])
     const plE = document.getElementById(k + '-pl')
-    plE.textContent = (pl >= 0 ? '+' : '') + (isStock ? fmtJPY(toJpy(Math.abs(pl))) : fmtUSD(Math.abs(pl)))
+    plE.textContent = (pl >= 0 ? '+' : '') + fmtMoney(Math.abs(pl))
     plE.className   = 'row-val ' + clsCh(pl)
     document.getElementById('pct-' + k).textContent = pct.toFixed(1) + '%'
     document.getElementById('seg-' + k).style.width = pct + '%'

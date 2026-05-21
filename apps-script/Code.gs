@@ -51,10 +51,16 @@ function fetchPrices() {
   const nvdaPrice  = fhData.c
   const nvdaChange = fhData.pc > 0 ? ((fhData.c - fhData.pc) / fhData.pc * 100) : 0
 
-  const fxUrl  = 'https://api.exchangerate.host/latest?base=USD&symbols=JPY'
-  const fxRes  = UrlFetchApp.fetch(fxUrl)
-  const fxData = JSON.parse(fxRes.getContentText())
-  const usdJpy = fxData && fxData.rates ? fxData.rates.JPY : null
+  let usdJpy = null
+  try {
+    const fxUrl  = 'https://api.exchangerate.host/latest?base=USD&symbols=JPY'
+    const fxRes  = UrlFetchApp.fetch(fxUrl)
+    const fxData = JSON.parse(fxRes.getContentText())
+    const rate = fxData && fxData.rates ? fxData.rates.JPY : null
+    if (typeof rate === 'number') usdJpy = rate
+  } catch (e) {
+    Logger.log('❌ FX error: ' + e.message)
+  }
 
   return {
     BTC:  { price: cgData.bitcoin.usd,  chg24h: cgData.bitcoin.usd_24h_change },
