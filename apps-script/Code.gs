@@ -119,7 +119,7 @@ function buildSlackBlocks(report) {
   const plEmoji = todayPL >= 0 ? '📈' : '📉'
   const now     = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'HH:mm dd/MM/yyyy')
 
-  const fmtStock = n => jpy(toJpy(n, fxRate))
+  const fmtStockJpy = n => jpy(toJpy(n, fxRate))
   const assetLine = (name, p, chg, val, fmtMoney) =>
     `${chgEmoji(chg)} *${name}* ${fmtMoney(p)} (${fmt(chg)}%) · giữ: ${fmtMoney(val)}`
 
@@ -144,7 +144,7 @@ function buildSlackBlocks(report) {
         text: [
           assetLine('BTC',  prices.BTC.price,  prices.BTC.chg24h,  vals.BTC,  usd),
           assetLine('ETH',  prices.ETH.price,  prices.ETH.chg24h,  vals.ETH,  usd),
-          assetLine('NVDA', prices.NVDA.price, prices.NVDA.chg24h, vals.NVDA, fmtStock),
+          assetLine('NVDA', prices.NVDA.price, prices.NVDA.chg24h, vals.NVDA, fmtStockJpy),
         ].join('\n')
       }
     },
@@ -204,9 +204,9 @@ function jpy(n) {
   if (n == null) return '—'
   return '¥' + n.toLocaleString('ja-JP', { maximumFractionDigits: 0 })
 }
-function toJpy(usd, rate) {
-  if (usd == null || !rate) return null
-  return usd * rate
+function toJpy(usdAmount, rate) {
+  if (usdAmount == null || !rate) return null
+  return usdAmount * rate
 }
 function fmt(n) { return (n >= 0 ? '+' : '') + n.toFixed(2) }
 function chgEmoji(n) { return n > 0 ? '🟢' : n < 0 ? '🔴' : '⚪' }
