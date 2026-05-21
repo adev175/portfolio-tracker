@@ -476,7 +476,10 @@ let changes = { btc: 0,    eth: 0,    nvda: 0    }
 let fx      = { usdJpy: null }
 
 const toJpy = n => (n == null || !fx.usdJpy) ? null : n * fx.usdJpy
-const fmtStock = n => fx.usdJpy ? fmtJPY(toJpy(n)) : fmtUSD(n)
+const fmtStock = n => {
+  const jpyVal = toJpy(n)
+  return jpyVal != null ? fmtJPY(jpyVal) : fmtUSD(n)
+}
 
 // ── Fetch prices ────────────────────────────────────
 async function fetchFX() {

@@ -125,7 +125,10 @@ function buildSlackBlocks(report) {
   const plEmoji = todayPL >= 0 ? '📈' : '📉'
   const now     = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'HH:mm dd/MM/yyyy')
 
-  const fmtStockJpy = n => jpy(toJpy(n, fxRate))
+  const fmtStockJpy = n => {
+    const jpyVal = toJpy(n, fxRate)
+    return jpyVal != null ? jpy(jpyVal) : usd(n)
+  }
   const assetLine = (name, p, chg, val, fmtMoney) =>
     `${chgEmoji(chg)} *${name}* ${fmtMoney(p)} (${fmt(chg)}%) · giữ: ${fmtMoney(val)}`
 
