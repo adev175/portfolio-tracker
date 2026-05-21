@@ -314,7 +314,7 @@
 <!-- Total -->
 <div class="total-card">
   <div class="total-label">TỔNG GIÁ TRỊ</div>
-  <div class="total-value" id="totalValue">$—</div>
+  <div class="total-value" id="totalValue">¥—</div>
   <div class="total-pl neu" id="totalPL">Đang tải giá...</div>
   <div class="alloc-bar">
     <div class="alloc-seg" id="seg-btc"  style="width:33%;background:#F7931A"></div>
@@ -465,7 +465,7 @@ function load() {
 }
 
 // ── Format ──────────────────────────────────────────
-const fmtUSD  = n => n == null ? '—' : '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+const fmtJPY  = n => n == null ? '—' : '¥' + Math.round(n).toLocaleString('ja-JP')
 const fmtPct  = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 const clsCh   = n => n > 0 ? 'pos' : n < 0 ? 'neg' : 'neu'
 
@@ -479,6 +479,7 @@ async function fetchAll() {
   btn.innerHTML = '<span class="spin">↻</span>'
   btn.disabled = true
 
+  await fetchUsdJpy()
   await Promise.allSettled([fetchCrypto(), fetchNVDA()])
 
   recalc()
@@ -492,16 +493,26 @@ async function fetchAll() {
   btn.disabled = false
 }
 
+let usdJpy = 155 // fallback rate
+
+async function fetchUsdJpy() {
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY')
+    const d = await r.json()
+    usdJpy = d.rates.JPY
+  } catch(e) { console.warn('USD/JPY rate fallback to', usdJpy) }
+}
+
 async function fetchCrypto() {
   try {
     const r = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true'
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=jpy&include_24hr_change=true'
     )
     const d = await r.json()
-    prices.btc  = d.bitcoin.usd;   changes.btc = d.bitcoin.usd_24h_change
-    prices.eth  = d.ethereum.usd;  changes.eth = d.ethereum.usd_24h_change
-    document.getElementById('btc-price').textContent = fmtUSD(prices.btc)
-    document.getElementById('eth-price').textContent = fmtUSD(prices.eth)
+    prices.btc  = d.bitcoin.jpy;   changes.btc = d.bitcoin.jpy_24h_change
+    prices.eth  = d.ethereum.jpy;  changes.eth = d.ethereum.jpy_24h_change
+    document.getElementById('btc-price').textContent = fmtJPY(prices.btc)
+    document.getElementById('eth-price').textContent = fmtJPY(prices.eth)
     setChg('btc-chg', changes.btc)
     setChg('eth-chg', changes.eth)
   } catch(e) { console.error('CoinGecko:', e) }
@@ -510,8 +521,8 @@ async function fetchCrypto() {
 async function fetchNVDA() {
   const key = get('finnhub-key')
   if (!key) {
-    prices.nvda = 135; changes.nvda = 0
-    document.getElementById('nvda-price').textContent = '$135 (ước tính)'
+    prices.nvda = Math.round(135 * usdJpy); changes.nvda = 0
+    document.getElementById('nvda-price').textContent = fmtJPY(prices.nvda) + ' (ước tính)'
     document.getElementById('nvda-chg').textContent = 'Cần Finnhub key'
     document.getElementById('nvda-chg').className = 'asset-chg neu'
     return
@@ -519,9 +530,9 @@ async function fetchNVDA() {
   try {
     const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=NVDA&token=${key}`)
     const d = await r.json()
-    prices.nvda  = d.c
+    prices.nvda  = d.c * usdJpy
     changes.nvda = d.pc > 0 ? ((d.c - d.pc) / d.pc * 100) : 0
-    document.getElementById('nvda-price').textContent = fmtUSD(prices.nvda)
+    document.getElementById('nvda-price').textContent = fmtJPY(prices.nvda)
     setChg('nvda-chg', changes.nvda)
   } catch(e) { console.error('Finnhub:', e) }
 }
@@ -551,15 +562,15 @@ function recalc() {
   const todayPct  = prevTotal > 0 ? (todayPL / prevTotal * 100) : 0
 
   // Total card
-  document.getElementById('totalValue').textContent = fmtUSD(total)
+  document.getElementById('totalValue').textContent = fmtJPY(total)
   const plEl = document.getElementById('totalPL')
   const sign = todayPL >= 0 ? '+' : ''
-  plEl.textContent = `${sign}${fmtUSD(Math.abs(todayPL))} hôm nay (${fmtPct(todayPct)})`
+  plEl.textContent = `${sign}${fmtJPY(Math.abs(todayPL))} hôm nay (${fmtPct(todayPct)})`
   plEl.className = 'total-pl ' + clsCh(todayPL)
 
   // Metrics
   const todayEl = document.getElementById('todayPL')
-  todayEl.textContent = (todayPL >= 0 ? '+' : '') + fmtUSD(Math.abs(todayPL))
+  todayEl.textContent = (todayPL >= 0 ? '+' : '') + fmtJPY(Math.abs(todayPL))
   todayEl.className   = 'metric-value ' + clsCh(todayPL)
   const pctEl = document.getElementById('todayPct')
   pctEl.textContent = fmtPct(todayPct)
@@ -574,9 +585,9 @@ function recalc() {
   ;['btc','eth','nvda'].forEach(k => {
     const pct = total > 0 ? (v[k] / total * 100) : 0
     const pl  = v[k] * changes[k] / 100
-    document.getElementById(k + '-val').textContent = fmtUSD(v[k])
+    document.getElementById(k + '-val').textContent = fmtJPY(v[k])
     const plE = document.getElementById(k + '-pl')
-    plE.textContent = (pl >= 0 ? '+' : '') + fmtUSD(Math.abs(pl))
+    plE.textContent = (pl >= 0 ? '+' : '') + fmtJPY(Math.abs(pl))
     plE.className   = 'row-val ' + clsCh(pl)
     document.getElementById('pct-' + k).textContent = pct.toFixed(1) + '%'
     document.getElementById('seg-' + k).style.width = pct + '%'
