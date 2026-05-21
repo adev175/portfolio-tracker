@@ -57,7 +57,7 @@ function fetchPrices() {
     const fxRes  = UrlFetchApp.fetch(fxUrl)
     const fxData = JSON.parse(fxRes.getContentText())
     const rate = fxData && fxData.rates ? fxData.rates.JPY : null
-    if (typeof rate === 'number') usdJpy = rate
+    if (typeof rate === 'number' && isFinite(rate) && rate > 0) usdJpy = rate
   } catch (e) {
     Logger.log('❌ FX error: ' + e.message)
   }
@@ -126,7 +126,7 @@ function buildSlackBlocks(report) {
   const now     = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'HH:mm dd/MM/yyyy')
 
   const fmtStockJpy = n => {
-    const jpyVal = toJpy(n, fxRate)
+    const jpyVal = usdToJpy(n, fxRate)
     return jpyVal != null ? jpy(jpyVal) : usd(n)
   }
   const assetLine = (name, p, chg, val, fmtMoney) =>
@@ -213,7 +213,7 @@ function jpy(n) {
   if (n == null) return '—'
   return '¥' + n.toLocaleString('ja-JP', { maximumFractionDigits: 0 })
 }
-function toJpy(usdAmount, rate) {
+function usdToJpy(usdAmount, rate) {
   if (usdAmount == null || !rate) return null
   return usdAmount * rate
 }
