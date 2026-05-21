@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Portfolio">
+  <title>Portfolio Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root {
+      --bg:      #0f172a;
+      --s1:      #1e293b;
+      --s2:      #334155;
+      --border:  rgba(255,255,255,0.07);
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --blue:    #60a5fa;
+      --amber:   #fbbf24;
+      --r:       14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 430px;
+      margin: 0 auto;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px);
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0 12px;
+    }
+    .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 10px;
+      width: 36px; height: 36px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:active { transform: scale(0.93); }
+    .update-chip {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+    }
+
+    /* Install banner */
+    #installBanner {
+      display: none;
+      background: linear-gradient(135deg, #1e3a5f, #1e293b);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: var(--r);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      align-items: center;
+      gap: 10px;
+    }
+    #installBanner p { font-size: 13px; flex: 1; line-height: 1.4; }
+    #installBanner p strong { color: var(--blue); }
+    .install-btn {
+      background: var(--blue);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* Total card */
+    .total-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .total-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; }
+    .total-value { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
+    .total-pl {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(34,197,94,0.12);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .total-pl.neg { background: rgba(239,68,68,0.12); }
+
+    /* Alloc bar */
+    .alloc-bar {
+      height: 5px;
+      border-radius: 3px;
+      background: var(--s2);
+      display: flex;
+      overflow: hidden;
+      margin: 14px 0 8px;
+    }
+    .alloc-seg { height: 100%; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .alloc-labels { display: flex; gap: 14px; }
+    .alloc-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* 2-col metrics */
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .metric-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px;
+    }
+    .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; }
+    .metric-value { font-size: 22px; font-weight: 700; line-height: 1; }
+    .metric-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Asset cards */
+    .section-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 16px 0 10px;
+    }
+    .asset-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .asset-card:active { border-color: rgba(255,255,255,0.15); }
+    .asset-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .asset-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .asset-meta { flex: 1; }
+    .asset-name { font-size: 15px; font-weight: 600; }
+    .asset-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .badge {
+      font-size: 9px; font-weight: 700;
+      padding: 2px 5px; border-radius: 4px;
+      margin-left: 5px; vertical-align: middle;
+    }
+    .badge-c { background: rgba(251,191,36,0.15); color: var(--amber); }
+    .badge-s { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .asset-price-col { text-align: right; }
+    .asset-price { font-size: 15px; font-weight: 600; }
+    .asset-chg { font-size: 12px; margin-top: 3px; }
+
+    .asset-rows { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 8px; }
+    .asset-row { display: flex; justify-content: space-between; align-items: center; }
+    .row-label { font-size: 12px; color: var(--muted); }
+    .row-val { font-size: 13px; font-weight: 600; }
+    .hold-input {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px; font-weight: 600;
+      padding: 6px 10px;
+      width: 110px;
+      text-align: right;
+    }
+    .hold-input:focus { outline: none; border-color: var(--blue); }
+
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neu { color: var(--muted); }
+
+    /* Analysis section */
+    .analysis-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      margin-top: 4px;
+    }
+    .analysis-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .analysis-output {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text);
+      min-height: 48px;
+    }
+    .analysis-output.empty { color: var(--muted); font-style: italic; }
+    .analysis-meta { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+    /* Config modal */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .overlay.open { display: flex; }
+    .sheet {
+      background: var(--s1);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px;
+      width: 100%;
+      max-width: 430px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--s2);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .sheet h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+    .field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .field-input {
+      width: 100%;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+    .field-input:focus { outline: none; border-color: var(--blue); }
+    .field-hint { font-size: 11px; color: var(--muted); margin-top: -10px; margin-bottom: 14px; }
+    .sheet-btns { display: flex; gap: 10px; }
+    .btn-save {
+      flex: 1;
+      background: var(--blue);
+      color: #0f172a;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      background: var(--s2);
+      color: var(--muted);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Spinner */
+    .spin { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 20px 0 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>Portfolio 📈</h1>
+    <span class="update-chip" id="updateChip">Chưa tải</span>
+  </div>
+  <div class="header-right">
+    <button class="icon-btn" onclick="openSheet()" title="Cài đặt">⚙</button>
+    <button class="icon-btn" id="refreshBtn" onclick="fetchAll()" title="Làm mới">↻</button>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="installBanner">
+  <p><strong>Cài lên điện thoại</strong><br>Dùng như app, không cần mở trình duyệt</p>
+  <button class="install-btn" id="installBtn">Cài đặt</button>
+</div>
+
+<!-- Total -->
+<div class="total-card">
+  <div class="total-label">TỔNG GIÁ TRỊ</div>
+  <div class="total-value" id="totalValue">$—</div>
+  <div class="total-pl neu" id="totalPL">Đang tải giá...</div>
+  <div class="alloc-bar">
+    <div class="alloc-seg" id="seg-btc"  style="width:33%;background:#F7931A"></div>
+    <div class="alloc-seg" id="seg-eth"  style="width:33%;background:#627EEA"></div>
+    <div class="alloc-seg" id="seg-nvda" style="width:34%;background:#76B900"></div>
+  </div>
+  <div class="alloc-labels">
+    <div class="alloc-item"><span class="dot" style="background:#F7931A"></span>BTC <span id="pct-btc">—</span></div>
+    <div class="alloc-item"><span class="dot" style="background:#627EEA"></span>ETH <span id="pct-eth">—</span></div>
+    <div class="alloc-item"><span class="dot" style="background:#76B900"></span>NVDA <span id="pct-nvda">—</span></div>
+  </div>
+</div>
+
+<!-- Metrics -->
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">HÔM NAY</div>
+    <div class="metric-value" id="todayPL">—</div>
+    <div class="metric-sub" id="todayPct">—</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">CRYPTO / STOCK</div>
+    <div class="metric-value" id="cryptoRatio">—</div>
+    <div class="metric-sub">tỷ lệ phân bổ</div>
+  </div>
+</div>
+
+<!-- Assets -->
+<div class="section-label">Tài sản</div>
+
+<!-- BTC -->
+<div class="asset-card">
+  <div class="asset-head">
+    <div class="asset-icon" style="background:#fff3e0;color:#bf360c">₿</div>
+    <div class="asset-meta">
+      <div class="asset-name">Bitcoin<span class="badge badge-c">CRYPTO</span></div>
+      <div class="asset-sub">BTC · CoinGecko (free)</div>
+    </div>
+    <div class="asset-price-col">
+      <div class="asset-price" id="btc-price">—</div>
+      <div class="asset-chg" id="btc-chg">—</div>
+    </div>
+  </div>
+  <div class="asset-rows">
+    <div class="asset-row">
+      <span class="row-label">Số lượng nắm giữ</span>
+      <input class="hold-input" id="hold-btc" type="number" value="0.01" step="0.001" min="0" oninput="save();recalc()">
+    </div>
+    <div class="asset-row"><span class="row-label">Giá trị</span><span class="row-val" id="btc-val">—</span></div>
+    <div class="asset-row"><span class="row-label">P&L hôm nay</span><span class="row-val" id="btc-pl">—</span></div>
+  </div>
+</div>
+
+<!-- ETH -->
+<div class="asset-card">
+  <div class="asset-head">
+    <div class="asset-icon" style="background:#ede7f6;color:#311b92">Ξ</div>
+    <div class="asset-meta">
+      <div class="asset-name">Ethereum<span class="badge badge-c">CRYPTO</span></div>
+      <div class="asset-sub">ETH · CoinGecko (free)</div>
+    </div>
+    <div class="asset-price-col">
+      <div class="asset-price" id="eth-price">—</div>
+      <div class="asset-chg" id="eth-chg">—</div>
+    </div>
+  </div>
+  <div class="asset-rows">
+    <div class="asset-row">
+      <span class="row-label">Số lượng nắm giữ</span>
+      <input class="hold-input" id="hold-eth" type="number" value="0.1" step="0.01" min="0" oninput="save();recalc()">
+    </div>
+    <div class="asset-row"><span class="row-label">Giá trị</span><span class="row-val" id="eth-val">—</span></div>
+    <div class="asset-row"><span class="row-label">P&L hôm nay</span><span class="row-val" id="eth-pl">—</span></div>
+  </div>
+</div>
+
+<!-- NVDA -->
+<div class="asset-card">
+  <div class="asset-head">
+    <div class="asset-icon" style="background:#e8f5e9;color:#1b5e20">N</div>
+    <div class="asset-meta">
+      <div class="asset-name">NVIDIA<span class="badge badge-s">STOCK</span></div>
+      <div class="asset-sub">NVDA · Finnhub (free)</div>
+    </div>
+    <div class="asset-price-col">
+      <div class="asset-price" id="nvda-price">—</div>
+      <div class="asset-chg" id="nvda-chg">—</div>
+    </div>
+  </div>
+  <div class="asset-rows">
+    <div class="asset-row">
+      <span class="row-label">Số cổ phiếu</span>
+      <input class="hold-input" id="hold-nvda" type="number" value="1" step="1" min="0" oninput="save();recalc()">
+    </div>
+    <div class="asset-row"><span class="row-label">Giá trị</span><span class="row-val" id="nvda-val">—</span></div>
+    <div class="asset-row"><span class="row-label">P&L hôm nay</span><span class="row-val" id="nvda-pl">—</span></div>
+  </div>
+</div>
+
+<!-- Auto Analysis (rule-based, no API key needed) -->
+<div class="section-label">Phân tích tự động</div>
+<div class="analysis-card">
+  <div class="analysis-output empty" id="analysisOutput">Tải giá xong sẽ tự phân tích...</div>
+  <div class="analysis-meta" id="analysisMeta"></div>
+</div>
+
+<footer>CoinGecko · Finnhub free tier · Không cần API key AI</footer>
+
+<!-- Config Bottom Sheet -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>⚙ Cài đặt</h2>
+
+    <div class="field-label">Finnhub API Key (giá NVDA)</div>
+    <input class="field-input" id="inp-finnhub" type="text" placeholder="d1abc123...">
+    <div class="field-hint">Miễn phí tại finnhub.io → Register</div>
+
+    <div class="field-label">Slack Webhook URL (nhận báo cáo)</div>
+    <input class="field-input" id="inp-slack" type="text" placeholder="https://hooks.slack.com/services/...">
+    <div class="field-hint">Tạo tại api.slack.com/apps → Incoming Webhooks</div>
+
+    <div class="field-label">Gửi báo cáo Slack lúc mấy giờ?</div>
+    <input class="field-input" id="inp-time" type="time" value="08:00">
+    <div class="field-hint">Apps Script sẽ dùng giá trị này</div>
+
+    <div class="sheet-btns">
+      <button class="btn-cancel" onclick="closeSheet()">Đóng</button>
+      <button class="btn-save" onclick="saveConfig()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Storage ─────────────────────────────────────────
+const get = k => { try { return localStorage.getItem(k) || '' } catch { return '' } }
+const set = (k, v) => { try { localStorage.setItem(k, v) } catch {} }
+
+function save() {
+  set('hold-btc', document.getElementById('hold-btc').value)
+  set('hold-eth', document.getElementById('hold-eth').value)
+  set('hold-nvda', document.getElementById('hold-nvda').value)
+}
+function load() {
+  document.getElementById('hold-btc').value  = get('hold-btc')  || '0.01'
+  document.getElementById('hold-eth').value  = get('hold-eth')  || '0.1'
+  document.getElementById('hold-nvda').value = get('hold-nvda') || '1'
+}
+
+// ── Format ──────────────────────────────────────────
+const fmtUSD  = n => n == null ? '—' : '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+const fmtPct  = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
+const clsCh   = n => n > 0 ? 'pos' : n < 0 ? 'neg' : 'neu'
+
+// ── State ───────────────────────────────────────────
+let prices  = { btc: null, eth: null, nvda: null }
+let changes = { btc: 0,    eth: 0,    nvda: 0    }
+
+// ── Fetch prices ────────────────────────────────────
+async function fetchAll() {
+  const btn = document.getElementById('refreshBtn')
+  btn.innerHTML = '<span class="spin">↻</span>'
+  btn.disabled = true
+
+  await Promise.allSettled([fetchCrypto(), fetchNVDA()])
+
+  recalc()
+  autoAnalyze()
+
+  const now = new Date()
+  document.getElementById('updateChip').textContent =
+    'Cập nhật ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})
+
+  btn.innerHTML = '↻'
+  btn.disabled = false
+}
+
+async function fetchCrypto() {
+  try {
+    const r = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true'
+    )
+    const d = await r.json()
+    prices.btc  = d.bitcoin.usd;   changes.btc = d.bitcoin.usd_24h_change
+    prices.eth  = d.ethereum.usd;  changes.eth = d.ethereum.usd_24h_change
+    document.getElementById('btc-price').textContent = fmtUSD(prices.btc)
+    document.getElementById('eth-price').textContent = fmtUSD(prices.eth)
+    setChg('btc-chg', changes.btc)
+    setChg('eth-chg', changes.eth)
+  } catch(e) { console.error('CoinGecko:', e) }
+}
+
+async function fetchNVDA() {
+  const key = get('finnhub-key')
+  if (!key) {
+    prices.nvda = 135; changes.nvda = 0
+    document.getElementById('nvda-price').textContent = '$135 (ước tính)'
+    document.getElementById('nvda-chg').textContent = 'Cần Finnhub key'
+    document.getElementById('nvda-chg').className = 'asset-chg neu'
+    return
+  }
+  try {
+    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=NVDA&token=${key}`)
+    const d = await r.json()
+    prices.nvda  = d.c
+    changes.nvda = d.pc > 0 ? ((d.c - d.pc) / d.pc * 100) : 0
+    document.getElementById('nvda-price').textContent = fmtUSD(prices.nvda)
+    setChg('nvda-chg', changes.nvda)
+  } catch(e) { console.error('Finnhub:', e) }
+}
+
+function setChg(id, pct) {
+  const el = document.getElementById(id)
+  el.textContent = fmtPct(pct)
+  el.className = 'asset-chg ' + clsCh(pct)
+}
+
+// ── Recalc portfolio ─────────────────────────────────
+function recalc() {
+  if (!prices.btc) return
+  const h = {
+    btc:  parseFloat(document.getElementById('hold-btc').value)  || 0,
+    eth:  parseFloat(document.getElementById('hold-eth').value)  || 0,
+    nvda: parseFloat(document.getElementById('hold-nvda').value) || 0,
+  }
+  const v = {
+    btc:  prices.btc  * h.btc,
+    eth:  prices.eth  * h.eth,
+    nvda: prices.nvda * h.nvda,
+  }
+  const total   = v.btc + v.eth + v.nvda
+  const todayPL = (v.btc * changes.btc + v.eth * changes.eth + v.nvda * changes.nvda) / 100
+  const prevTotal = total - todayPL
+  const todayPct  = prevTotal > 0 ? (todayPL / prevTotal * 100) : 0
+
+  // Total card
+  document.getElementById('totalValue').textContent = fmtUSD(total)
+  const plEl = document.getElementById('totalPL')
+  const sign = todayPL >= 0 ? '+' : ''
+  plEl.textContent = `${sign}${fmtUSD(Math.abs(todayPL))} hôm nay (${fmtPct(todayPct)})`
+  plEl.className = 'total-pl ' + clsCh(todayPL)
+
+  // Metrics
+  const todayEl = document.getElementById('todayPL')
+  todayEl.textContent = (todayPL >= 0 ? '+' : '') + fmtUSD(Math.abs(todayPL))
+  todayEl.className   = 'metric-value ' + clsCh(todayPL)
+  const pctEl = document.getElementById('todayPct')
+  pctEl.textContent = fmtPct(todayPct)
+  pctEl.className   = 'metric-sub ' + clsCh(todayPct)
+
+  const cryptoPct = total > 0 ? ((v.btc + v.eth) / total * 100) : 0
+  const stockPct  = total > 0 ? (v.nvda / total * 100) : 0
+  document.getElementById('cryptoRatio').textContent =
+    Math.round(cryptoPct) + '/' + Math.round(stockPct)
+
+  // Per-asset
+  ;['btc','eth','nvda'].forEach(k => {
+    const pct = total > 0 ? (v[k] / total * 100) : 0
+    const pl  = v[k] * changes[k] / 100
+    document.getElementById(k + '-val').textContent = fmtUSD(v[k])
+    const plE = document.getElementById(k + '-pl')
+    plE.textContent = (pl >= 0 ? '+' : '') + fmtUSD(Math.abs(pl))
+    plE.className   = 'row-val ' + clsCh(pl)
+    document.getElementById('pct-' + k).textContent = pct.toFixed(1) + '%'
+    document.getElementById('seg-' + k).style.width = pct + '%'
+  })
+}
+
+// ── Rule-based analysis (free, no API) ──────────────
+function autoAnalyze() {
+  if (!prices.btc) return
+  const h = {
+    btc:  parseFloat(document.getElementById('hold-btc').value)  || 0,
+    eth:  parseFloat(document.getElementById('hold-eth').value)  || 0,
+    nvda: parseFloat(document.getElementById('hold-nvda').value) || 0,
+  }
+  const v = { btc: prices.btc*h.btc, eth: prices.eth*h.eth, nvda: prices.nvda*h.nvda }
+  const total = v.btc + v.eth + v.nvda
+  const todayPL = (v.btc*changes.btc + v.eth*changes.eth + v.nvda*changes.nvda) / 100
+  const todayPct = total > 0 ? (todayPL / (total-todayPL) * 100) : 0
+  const cryptoPct = total > 0 ? ((v.btc+v.eth)/total*100) : 0
+
+  const msgs = []
+
+  // Thị trường hôm nay
+  if (todayPct <= -3)      msgs.push('🔴 Hôm nay giảm mạnh (' + fmtPct(todayPct) + '). Giữ bình tĩnh, không nên panic sell.')
+  else if (todayPct >= 3)  msgs.push('🟢 Hôm nay tăng tốt (' + fmtPct(todayPct) + '). Có thể cân nhắc chốt một phần.')
+  else                     msgs.push('🟡 Thị trường ổn định hôm nay (' + fmtPct(todayPct) + ').')
+
+  // BTC vs ETH signal
+  if (Math.abs(changes.btc - changes.eth) > 3) {
+    const leader = changes.btc > changes.eth ? 'BTC' : 'ETH'
+    msgs.push(`📊 ${leader} đang outperform hôm nay — thường báo hiệu xu hướng ngắn hạn.`)
+  }
+
+  // Concentration risk
+  if (cryptoPct > 80) msgs.push('⚠ Crypto chiếm ' + cryptoPct.toFixed(0) + '% — cân nhắc tăng tỷ lệ cổ phiếu để giảm biến động.')
+  if (cryptoPct < 30) msgs.push('📈 Stock chiếm nhiều — crypto (' + cryptoPct.toFixed(0) + '%) có thể tăng trưởng cao hơn dài hạn.')
+
+  // NVDA specific
+  if (Math.abs(changes.nvda) > 5)
+    msgs.push('🖥 NVDA biến động lớn (' + fmtPct(changes.nvda) + ') — theo dõi tin AI/chip tuần này.')
+
+  const el = document.getElementById('analysisOutput')
+  el.textContent = msgs.join('\n\n')
+  el.className = 'analysis-output'
+  document.getElementById('analysisMeta').textContent =
+    '* Phân tích tự động dựa theo quy tắc, không cần API'
+}
+
+// ── Config sheet ─────────────────────────────────────
+function openSheet() {
+  document.getElementById('inp-finnhub').value = get('finnhub-key')
+  document.getElementById('inp-slack').value   = get('slack-webhook')
+  document.getElementById('inp-time').value    = get('report-time') || '08:00'
+  document.getElementById('overlay').classList.add('open')
+}
+function closeSheet() {
+  document.getElementById('overlay').classList.remove('open')
+}
+function saveConfig() {
+  set('finnhub-key',   document.getElementById('inp-finnhub').value.trim())
+  set('slack-webhook', document.getElementById('inp-slack').value.trim())
+  set('report-time',   document.getElementById('inp-time').value)
+  closeSheet()
+  fetchAll()
+}
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeSheet()
+})
+
+// ── PWA Install ──────────────────────────────────────
+let deferredPrompt = null
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  deferredPrompt = e
+  const banner = document.getElementById('installBanner')
+  banner.style.display = 'flex'
+  document.getElementById('installBtn').onclick = async () => {
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') banner.style.display = 'none'
+    deferredPrompt = null
+  }
+})
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none'
+})
+
+// ── Service Worker ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error)
+}
+
+// ── Init ─────────────────────────────────────────────
+load()
+fetchAll()
+</script>
+</body>
+</html>
